@@ -111,7 +111,7 @@ def generate_launch_description():
 
     return LaunchDescription([
         rsp,
-        # joystick,
+        joystick,
         gazebo,
         spawn_entity,
         world_arg,
