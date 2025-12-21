@@ -49,15 +49,16 @@ def generate_launch_description():
                     launch_arguments={'gz_args': ['-r -v4 ', world], 'on_exit_shutdown': 'true'}.items()
              )
 
-    # Run the spawner node from the ros_gz_sim package. The entity name doesn't really matter if you only have a single robot.
+    # Run the spawner node from the ros_gz_sim package.
+    # The entity name doesn't really matter if you only have a single robot.
     spawn_entity = Node(
     	package='ros_gz_sim', 
     	executable='create',
 		arguments=['-topic', 'robot_description', '-name', 'my_bot',
-				    '-x', '0.0',
-		   			'-y', '0.0',
-		   			'-z', '0.1',
-                    '-Y', '-1.5708'], #1.5708 2.0944
+			   '-x', '1.0',
+		   	   '-y', '3.0',
+		   	   '-z', '0.1',
+                           '-Y', '-1.5708'],
 		output='screen',
 	)
 
@@ -71,26 +72,6 @@ def generate_launch_description():
         package="controller_manager",
         executable="spawner",
         arguments=["joint_broad"],
-    )
-
-    ultrasonic_data = Node(
-        package="ultrasonic",
-        executable="ultrasonic_data",
-    )
-
-    neuromorphic_controller = Node(
-        package="neuromorphic_controller",
-        executable="neuromorphic_controller",
-    )
-
-    pose_listener = Node(
-        package="pose_listener",
-        executable="pose_listener",
-    )
-
-    path_publisher = Node(
-        package="path_publisher",
-        executable="path_publisher",
     )
 
     bridge_params = os.path.join(get_package_share_directory(package_name),'config','gz_bridge.yaml')

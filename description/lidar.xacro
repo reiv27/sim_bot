@@ -29,7 +29,6 @@
 		<material>Gazebo/Red</material>
 
         <sensor name="laser" type="gpu_lidar">
-            <!-- <ignition_frame_id>custom_name_here</ignition_frame_id>             <pose> 0 0 0 0 0 0 </pose> -->
             <visualize>false</visualize>
             <update_rate>10</update_rate>
             <lidar>
@@ -42,7 +41,7 @@
                 </scan>
                 <range>
                     <min>0.1</min>
-                    <max>8</max>
+                    <max>12</max>
                 </range>
             </lidar>
             <topic>scan</topic>
