@@ -1,0 +1,106 @@
+# Moving obstacle configuration for obstacle_controller node.
+#
+# obstacle_names — list every obstacle to spawn and control.
+#                  Each entry must have a matching section below.
+#
+# trajectory_profiles — reusable motion presets. An obstacle can reference one
+#                       via trajectory_profile and override selected fields.
+#
+# Per-obstacle parameters:
+#   type           cylinder | elliptic_cylinder
+#   radius         metres (cylinder only)
+#   radius_x/y     semi-axes in metres (elliptic_cylinder only)
+#   height         metres
+#   mass           kg
+#   init_x/y       spawn position in world frame, metres
+#   init_yaw       spawn heading, radians
+#                  (for linear trajectory this sets the travel axis)
+#   trajectory     linear | circular | static | sequence | straight_spin
+#   trajectory_profile  optional profile name from trajectory_profiles
+#   linear_vel     forward speed, m/s
+#   angular_vel    turn rate, rad/s — used for 'circular' only
+#                  circle radius = linear_vel / angular_vel
+#   turn_distance  metres before reversing direction ('linear' only)
+#   world_heading  fixed world-frame direction for 'straight_spin', radians
+#   loop           repeat a sequence trajectory after the last segment
+#   segments       list of {linear_vel, angular_vel, duration} for 'sequence'
+#   color_r/g/b    RGB colour in [0, 1]
+#
+# Together → diverge (S-curve, still facing +X) → straight in separate lanes →
+# converge (inverse S) → together again. Mirrored ω for upper/lower lane; loop
+# repeats without drifting apart (single-turn arcs kept heading off +X).
+
+obstacle_controller:
+  ros__parameters:
+
+    obstacle_names:
+      - cylinder_obs
+      - elliptic_obs
+      #- elliptic_obs2
+
+    # ── Circular cylinder (lower lane, init_y < 0) ───────────────────────────
+    cylinder_obs:
+      type: cylinder
+      radius: 1.0
+      height: 0.7
+      mass: 15.0
+      init_x: 0.0
+      init_y: -2.0
+      init_yaw: 0.0
+      trajectory: sequence
+      loop: true
+      segments:
+        # 1 — вместе прямо +X (длительность = фаза «раздельно»)
+        - { linear_vel: 0.2, angular_vel: 0.0, duration: 42.0 }
+        # 2 — разъезд: S (−Y): ещё сильнее разнос по Y
+        - { linear_vel: 0.2, angular_vel: -0.42, duration: 7.0 }
+        - { linear_vel: 0.2, angular_vel: 0.42, duration: 7.0 }
+        # 3 — раздельно: как один отрезок «вместе» (×1.5 к прежним 28 с)
+        - { linear_vel: 0.2, angular_vel: 0.0, duration: 42.0 }
+        # 4 — съезд: обратный S (как п.2)
+        - { linear_vel: 0.2, angular_vel: 0.42, duration: 7.0 }
+        - { linear_vel: 0.2, angular_vel: -0.42, duration: 7.0 }
+        # 5 — снова вместе прямо +X
+        - { linear_vel: 0.2, angular_vel: 0.0, duration: 42.0 }
+      color_r: 1.0
+      color_g: 0.3
+      color_b: 0.1
+
+    # ── Elliptic cylinder (upper lane, init_y > 0) ───────────────────────────
+    elliptic_obs:
+      type: elliptic_cylinder
+      radius_x: 2.0       # semi-axis along model X, metres
+      radius_y: 1.0       # semi-axis along model Y, metres
+      height: 0.7
+      mass: 15.0
+      init_x: 0.0
+      init_y: 2.0
+      init_yaw: 0.0
+      trajectory: sequence
+      loop: true
+      segments:
+        - { linear_vel: 0.2, angular_vel: 0.0, duration: 42.0 }
+        - { linear_vel: 0.2, angular_vel: 0.42, duration: 7.0 }
+        - { linear_vel: 0.2, angular_vel: -0.42, duration: 7.0 }
+        - { linear_vel: 0.2, angular_vel: 0.0, duration: 42.0 }
+        - { linear_vel: 0.2, angular_vel: -0.42, duration: 7.0 }
+        - { linear_vel: 0.2, angular_vel: 0.42, duration: 7.0 }
+        - { linear_vel: 0.2, angular_vel: 0.0, duration: 42.0 }
+      color_r: 0.1
+      color_g: 0.3
+      color_b: 1.0
+
+    # ── Elliptic cylinder 2 ──────────────────────────────────────────────────
+    # elliptic_obs2:
+    #   type: elliptic_cylinder
+    #   radius_x: 2.5       # longer sausage
+    #   radius_y: 0.7
+    #   height: 0.7
+    #   mass: 15.0
+    #   init_x: -1.0
+    #   init_y: -2.0
+    #   init_yaw: -0.785398  # 45 deg — travel axis along world Y
+    #   trajectory_profile: reverse_spin
+    #   color_r: 0.1
+    #   color_g: 0.9
+    #   color_b: 0.3

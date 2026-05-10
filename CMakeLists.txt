@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 3.5)
 project(sim_bot)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Default to C99
 if(NOT CMAKE_C_STANDARD)
   set(CMAKE_C_STANDARD 99)
@@ -17,9 +19,20 @@ endif()
 
 # find dependencies
 find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+find_package(gz_sim_vendor REQUIRED)
+find_package(gz-sim8 REQUIRED)
+
+# Gazebo trajectory visual plugin
+add_library(trajectory_visual_plugin SHARED
+  plugins/TrajectoryVisualPlugin.cc)
+
+target_compile_features(trajectory_visual_plugin PUBLIC cxx_std_17)
+target_link_libraries(trajectory_visual_plugin gz-sim8::gz-sim8)
+
+install(TARGETS trajectory_visual_plugin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION lib/${PROJECT_NAME})
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -35,6 +48,12 @@ endif()
 install(
   DIRECTORY config description launch worlds
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(
+  PROGRAMS
+    scripts/obstacle_controller.py
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()

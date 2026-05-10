@@ -30,7 +30,17 @@
       filename="gz-sim-contact-system"
       name="gz::sim::systems::Contact">
     </plugin>
+    <plugin
+      filename="libtrajectory_visual_plugin.so"
+      name="trajectory_visual::TrajectoryVisualPlugin">
+      <robot_name>my_bot</robot_name>
+      <min_dist>0.15</min_dist>
+      <marker_radius>0.04</marker_radius>
+      <color>1.0 0.2 0.0 1.0</color>
+      <max_markers>210</max_markers>
+    </plugin>
     <light type="directional" name="sun">
+      <visualize>false</visualize>
       <cast_shadows>true</cast_shadows>
       <pose>0 0 10 0 0 0</pose>
       <diffuse>0.8 0.8 0.8 1</diffuse>
@@ -77,5 +87,28 @@
         </visual>
       </link>
     </model>
+    <gui fullscreen="0">
+      <plugin filename="GzScene3D" name="3D View">
+        <gz-gui>
+          <title>3D View</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <property type="string" key="state">docked</property>
+        </gz-gui>
+        <engine>ogre2</engine>
+        <scene>scene</scene>
+        <ambient_light>0.4 0.4 0.4</ambient_light>
+        <background_color>0.8 0.8 0.8</background_color>
+        <camera_pose>6 2 20 0 1.5708 0</camera_pose>
+      </plugin>
+      <plugin filename="VideoRecorder" name="VideoRecorder">
+        <gz-gui>
+          <title>Video Recorder</title>
+          <property type="bool" key="showTitleBar">false</property>
+          <anchor_parent>GzScene3D</anchor_parent>
+          <anchor_horizontal>right</anchor_horizontal>
+          <anchor_vertical>top</anchor_vertical>
+        </gz-gui>
+      </plugin>
+    </gui>
   </world>
 </sdf>
