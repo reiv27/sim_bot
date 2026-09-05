@@ -6,6 +6,7 @@
     <xacro:include filename="gazebo_control.xacro"/>
     <!-- <xacro:include filename="ros2_control.xacro"/>   Uncommit for ros2_control -->
     <xacro:include filename="lidar.xacro"/>
+    <xacro:lidar_2d parent="chassis" xyz="0 0 0.1"/>
     <!-- <xacro:include filename="tof_sensors.xacro"/> -->
     <xacro:include filename="camera.xacro"/>
     <!-- <xacro:include filename="depth_camera.xacro"/> -->

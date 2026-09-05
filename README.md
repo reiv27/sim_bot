@@ -25,6 +25,26 @@ source install/setup.bash
 
 ---
 
+## Выбор модели робота
+
+Все сценарии запуска принимают аргумент `robot_model`:
+
+| Значение | Модель | Описание |
+|---|---|---|
+| `sim_bot` (по умолчанию) | `description/robot.urdf.xacro` | Штатный дифференциальный робот пакета |
+| `kobuki` | `description/kobuki.urdf.xacro` | Kobuki TurtleBot 2, портирован из `sim_kobuki` |
+
+```bash
+ros2 launch sim_bot launch_sim.launch.py robot_model:=kobuki
+```
+
+Обе модели выдают одинаковый набор топиков (`/scan`, `/odom`, `/cmd_vel`, `/joint_states`, `/tf`),
+поэтому мост, RViz-конфиги и внешние контроллеры работают без правок. У Kobuki вместо
+штатного Livox Mid360 стоит тот же 2D `gpu_lidar` (360 лучей, 12 м) — он смонтирован
+над верхней платой, потому что шестигранные стойки видны лидару.
+
+---
+
 ## Запуск симуляции
 
 ### Вариант 1 — только робот
@@ -75,6 +95,7 @@ ros2 launch sim_bot sim_with_obstacles.launch.py
 | Аргумент | По умолчанию | Описание |
 |---|---|---|
 | `world` | `worlds/empty.world` | Путь к SDF-файлу мира |
+| `robot_model` | `sim_bot` | Модель робота: `sim_bot` или `kobuki` |
 | `obstacles_config` | `config/obstacles.yaml` | Конфиг препятствий |
 | `obstacles_start_delay` | `8.0` | Задержка старта препятствий, секунды |
 
@@ -82,6 +103,7 @@ ros2 launch sim_bot sim_with_obstacles.launch.py
 
 ```bash
 ros2 launch sim_bot sim_with_obstacles.launch.py \
+    robot_model:=kobuki \
     world:=/path/to/world.sdf \
     obstacles_config:=/path/to/obstacles.yaml \
     obstacles_start_delay:=12.0

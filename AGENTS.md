@@ -10,7 +10,8 @@
 
 | Каталог / файл | Роль |
 |----------------|------|
-| `description/` | Xacro-модули URDF: шасси, колёса, Gazebo-плагины, сенсоры. Точка входа — `robot.urdf.xacro`. |
+| `description/` | Xacro-модули URDF: шасси, колёса, Gazebo-плагины, сенсоры. Точки входа — `robot.urdf.xacro` и `kobuki.urdf.xacro`. |
+| `meshes/` | COLLADA-меши моделей (`kobuki/`), резолвятся как `package://sim_bot/meshes/...`. |
 | `launch/` | Сценарии запуска симуляции, RSP, телеопа, навигации, локализации, SLAM. |
 | `config/` | YAML: мост Gazebo↔ROS, Nav2, SLAM, джойстик, RViz, контроллеры (для будущего ros2_control). |
 | `worlds/` | SDF-миры для `gz_sim` (например `empty.world`, `obstacles.world`). |
@@ -19,12 +20,20 @@
 
 ## Как устроена модель робота (`description/`)
 
+Моделей две, выбор — аргументом `robot_model` (`sim_bot` | `kobuki`) у `rsp.launch.py`,
+`launch_sim.launch.py` и `sim_with_obstacles.launch.py`. Соответствие «имя → xacro»
+живёт в словаре `ROBOT_DESCRIPTIONS` в `rsp.launch.py`, высота спавна — в `ROBOT_SPAWN_Z`
+в `launch_sim.launch.py`. Обе модели публикуют один и тот же набор топиков, поэтому
+`config/gz_bridge.yaml` и внешние ноды общие.
+
 - **`robot.urdf.xacro`** — собирает робота из включений:
   - **`robot_core.xacro`** — `base_link`, `base_footprint`, `chassis`, приводные колёса (`left_wheel_joint`, `right_wheel_joint`), неподвижные «кастеры».
   - **`gazebo_control.xacro`** — плагины Gazebo Sim: **DiffDrive** (`cmd_vel` → одометрия + TF `odom`→`base_link`), **JointStatePublisher** для указанных шарниров.
-  - **`lidar.xacro`** — GPU lidar, топик в симе `scan`, кадр `lidar_frame`.
+  - **`lidar.xacro`** — макрос `lidar_2d`: GPU lidar, топик в симе `scan`, кадр `lidar_frame`. Параметры `parent` / `xyz` задают точку крепления, дефолты — `chassis` и `0 0 0.1`.
   - **`camera.xacro`** — камера, топик `camera/image_raw`, кадр `camera_optical_link`.
 - Закомментированные включения (при необходимости включаются вручную): `ros2_control.xacro`, `tof_sensors.xacro`, `depth_camera.xacro`, `ultrasonics.xacro`.
+
+- **`kobuki.urdf.xacro`** — Kobuki TurtleBot 2, портирован из пакета `sim_kobuki`. Отличия от оригинала: меши переписаны на `package://sim_bot/`, вместо Livox Mid360 (`RGLServerPluginInstance`, `PointCloud2`) поставлен `xacro:lidar_2d` над верхней платой — шестигранные стойки видны GPU-лидару, поэтому ниже плиты его ставить нельзя. Лимит скорости колёсных шарниров поднят с 20 до 40 рад/с: при `v = 1.0` и `ω = 2.0` внешнему колесу нужно 35 рад/с, иначе оба колеса упираются в лимит и робот теряет управляемость по курсу.
 
 **Режим привода:** сейчас основной путь — плагин **gz-sim-diff-drive-system** в URDF, а не `ros2_control` (в `launch_sim.launch.py` спавнеры `diff_cont` / `joint_broad` закомментированы; в `rsp.launch.py` передаётся `use_ros2_control:=false`).
 
@@ -39,13 +48,21 @@
 5. **`ros_gz_bridge` `parameter_bridge`** — конфиг `config/gz_bridge.yaml`: синхронизация `clock`, `joint_states`, `odom`, `tf`, `cmd_vel`, `scan` между ROS 2 и Gazebo.
 6. **`ros_gz_image` `image_bridge`** — мост для `/camera/image_raw`.
 
-Аргумент запуска: **`world`** — полный путь к `.world` файлу (можно из этого пакета или внешний).
+Перед запуском Gazebo лаунч добавляет install-share пакета в **`GZ_SIM_RESOURCE_PATH`**, иначе `package://sim_bot/meshes/...` не резолвится.
+
+Аргументы запуска:
+
+| Аргумент | По умолчанию | Назначение |
+|---|---|---|
+| `world` | `worlds/empty.world` | Полный путь к `.world` файлу (из пакета или внешний) |
+| `robot_model` | `sim_bot` | Какую модель публиковать и спавнить |
+| `robot_name` | `my_bot` | Имя сущности в Gazebo. `TrajectoryVisualPlugin` в `empty.world` захардкожен на `my_bot`, поэтому имя не зависит от модели |
 
 ## Другие launch-файлы
 
 | Файл | Назначение |
 |------|------------|
-| `rsp.launch.py` | Только URDF + `robot_state_publisher`; аргументы `use_sim_time`, при необходимости расширяйте для `use_ros2_control`. |
+| `rsp.launch.py` | Только URDF + `robot_state_publisher`; аргументы `use_sim_time`, `robot_model`, при необходимости расширяйте для `use_ros2_control`. |
 | `joystick.launch.py` | Телеоп с `config/joystick.yaml`. |
 | `navigation_launch.py` | Стек Nav2 (controller, planner, BT navigator, smoother, lifecycle и т.д.); `params_file` по умолчанию `config/nav2_params.yaml`; ремапы `cmd_vel` ↔ навигация согласованы с параметрами Nav2. |
 | `localization_launch.py` | `map_server` + `amcl` + lifecycle; требуется аргумент **`map`** (путь к YAML карты). |
@@ -64,6 +81,7 @@ SDF с плагинами физики, сцены, сенсоров, освещ
 ## Типичные задачи для агента
 
 - **Сменить сенсор / кинематику** — править соответствующий `.xacro`, проверить топик в `gz_bridge.yaml` и при необходимости в Nav2/SLAM YAML.
+- **Добавить новую модель робота** — положить `<модель>.urdf.xacro` в `description/`, добавить запись в `ROBOT_DESCRIPTIONS` (`rsp.launch.py`) и `ROBOT_SPAWN_Z` (`launch_sim.launch.py`), дописать значение в `choices` у `sim_with_obstacles.launch.py`. Проверьте, что лимиты колёсных шарниров покрывают нужные `v` и `ω`.
 - **Включить ros2_control** — раскомментировать `ros2_control.xacro` в `robot.urdf.xacro`, в `rsp` переключить `use_ros2_control`, в `launch_sim` включить спавнеры контроллеров и согласовать `joystick.launch.py` (ремапы/`twist_stamper` на `diff_cont`).
 - **Навигация в симе** — поднять симуляцию с `use_sim_time`, затем localization/navigation с тем же `use_sim_time:=true` и валидной картой или SLAM.
 

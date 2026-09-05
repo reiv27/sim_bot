@@ -33,6 +33,7 @@ def generate_launch_description():
     ),
     launch_arguments={
       'world': LaunchConfiguration('world'),
+      'robot_model': LaunchConfiguration('robot_model'),
     }.items(),
   )
 
@@ -55,6 +56,12 @@ def generate_launch_description():
       'world',
       default_value=default_world,
       description='Gazebo world file (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'robot_model',
+      default_value='sim_bot',
+      choices=['kobuki', 'sim_bot'],
+      description='Robot description to simulate (same as launch_sim.launch.py)',
     ),
     DeclareLaunchArgument(
       'obstacles_config',
