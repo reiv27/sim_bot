@@ -157,6 +157,44 @@ ros2 topic pub /cmd_vel geometry_msgs/msg/Twist \
 
 ## Конфигурация препятствий
 
+### Жёсткая формация
+
+Готовый сценарий с тремя препятствиями, которые перемещаются и поворачиваются
+как одно твёрдое тело:
+
+```bash
+ros2 launch sim_bot sim_with_obstacles.launch.py \
+    obstacles_config:=/home/user/workspace/src/sim_bot/config/obstacles_rigid_formation.yaml
+```
+
+В `rigid_formation` задаются имя модели, начальная поза `init_x/y/yaw` и общая
+траектория (`static`, `linear`, `circular`, `sequence` или `straight_spin`).
+Пример использует `linear_vel: 0.2` м/с и `angular_vel: 0.10` рад/с.
+У участников из `obstacle_names` задаются форма, цвет и постоянные
+`offset_x`, `offset_y`, `offset_yaw` относительно системы координат формации.
+Начальная поза группы относится к этой системе координат, а не к центру масс.
+Поля `init_x/y/yaw` участников в этом режиме запрещены; индивидуальные
+траектории не применяются.
+
+Gazebo получает одну модель с одним жёстким link и отдельными visual/collision
+для каждого участника. Расстояния и взаимные углы сохраняются конструктивно,
+включая повороты и контакт с роботом; невидимых перемычек между формами нет.
+В дереве Gazebo участники являются геометриями общей модели, а не отдельными
+моделями. Команды всей группе идут в `/model/rigid_group/cmd_vel`.
+Без секции `rigid_formation` сохраняется независимое управление препятствиями.
+
+Для автономного движения робота отдельно запустите:
+
+```bash
+ros2 launch reactive_circumnav reactive_circumnav_launch.py
+```
+
+Проверка генерации формации после подключения окружения ROS 2:
+
+```bash
+python3 -m unittest discover -s /home/user/workspace/src/sim_bot/test -v
+```
+
 Файл: `config/obstacles.yaml`
 
 ### Типы препятствий

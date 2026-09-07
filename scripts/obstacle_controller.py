@@ -61,6 +61,11 @@ class ObstacleController(Node):
             raw = yaml.safe_load(fh) or {}
 
         params = raw.get('obstacle_controller', {}).get('ros__parameters', {})
+        # The launch combines all member shapes into one rigid Gazebo body.
+        # Only that body's trajectory is controlled, never individual members.
+        formation = params.get('rigid_formation')
+        if formation is not None:
+            return {formation['name']: formation}
         obstacle_names = params.get('obstacle_names', [])
         profiles = params.get('trajectory_profiles', {})
         resolved = {}
