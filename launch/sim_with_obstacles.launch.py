@@ -34,6 +34,9 @@ def generate_launch_description():
     launch_arguments={
       'world': LaunchConfiguration('world'),
       'robot_model': LaunchConfiguration('robot_model'),
+      'lidar_profile': LaunchConfiguration('lidar_profile'),
+      'lidar_update_rate': LaunchConfiguration('lidar_update_rate'),
+      'lidar_noise_config': LaunchConfiguration('lidar_noise_config'),
     }.items(),
   )
 
@@ -52,6 +55,12 @@ def generate_launch_description():
   )
 
   return LaunchDescription([
+    DeclareLaunchArgument('lidar_update_rate', default_value='10',
+                         description='Simulated lidar update frequency in Hz'),
+    DeclareLaunchArgument('lidar_profile', default_value='ideal',
+                         choices=['ideal', 'mid360_2d']),
+    DeclareLaunchArgument('lidar_noise_config', default_value=os.path.join(
+        share, 'config', 'livox_mid360_noise.yaml')),
     DeclareLaunchArgument(
       'world',
       default_value=default_world,

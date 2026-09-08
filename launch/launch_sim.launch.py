@@ -10,6 +10,8 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import EnvironmentVariable, LaunchConfiguration
 
 from launch_ros.actions import Node
+from launch.conditions import IfCondition
+from launch.substitutions import PythonExpression
 
 
 # Drop height per model: enough to clear the ground plane, not enough to bounce.
@@ -63,6 +65,8 @@ def generate_launch_description():
                     get_package_share_directory(package_name), 'launch', 'rsp.launch.py'
                 )]), launch_arguments={'use_sim_time': 'true',
                                       'use_ros2_control': 'false',
+                                      'lidar_profile': LaunchConfiguration('lidar_profile'),
+                                      'lidar_update_rate': LaunchConfiguration('lidar_update_rate'),
                                       'robot_model': robot_model}.items()
     )
 
@@ -131,6 +135,12 @@ def generate_launch_description():
     )
 
     return LaunchDescription([
+        DeclareLaunchArgument('lidar_update_rate', default_value='10',
+                              description='Simulated lidar update frequency in Hz'),
+        DeclareLaunchArgument('lidar_profile', default_value='ideal',
+                              choices=['ideal', 'mid360_2d']),
+        DeclareLaunchArgument('lidar_noise_config', default_value=os.path.join(
+            get_package_share_directory(package_name), 'config', 'livox_mid360_noise.yaml')),
         robot_model_arg,
         robot_name_arg,
         gz_resource_path,
@@ -141,6 +151,11 @@ def generate_launch_description():
         world_arg,
         ros_gz_bridge,
         ros_gz_image_bridge,
+        Node(package='sim_bot', executable='lidar_noise.py', name='lidar_noise',
+             parameters=[LaunchConfiguration('lidar_noise_config'), {'use_sim_time': True}],
+             condition=IfCondition(PythonExpression([
+                 "'", LaunchConfiguration('lidar_profile'), "' == 'mid360_2d'"
+             ])), output='screen'),
         #diff_drive_spawner,  # Uncommit for ros2_control
         #joint_broad_spawner  # Uncommit for ros2_control
         # ultrasonic_data,

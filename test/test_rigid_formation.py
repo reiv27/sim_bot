@@ -34,20 +34,32 @@ class RigidFormationTests(unittest.TestCase):
         self.assertEqual(len(self.model.findall('link')), 1)
         self.assertEqual(len(self.model.findall('plugin')), 1)
         link = self.model.find('link')
-        self.assertEqual(len(link.findall('collision')), 3)
+        self.assertEqual(len(link.findall('collision')), 7)
         self.assertEqual(len(link.findall('visual')), 3)
         self.assertEqual(float(link.findtext('inertial/mass')), 45.0)
         for name, cfg in self.members.items():
-            collision = link.find(f"collision[@name='{name}_collision']")
             visual = link.find(f"visual[@name='{name}_visual']")
-            self.assertEqual(collision.findtext('pose'), visual.findtext('pose'))
-            pose = list(map(float, collision.findtext('pose').split()))
+            pose = list(map(float, visual.findtext('pose').split()))
             self.assertAlmostEqual(pose[0], cfg['offset_x'])
             self.assertAlmostEqual(pose[1], cfg['offset_y'])
             self.assertAlmostEqual(pose[5], cfg['offset_yaw'])
             # Polyline extrusion starts at z=0, cylinders are centred at z=0.
             expected_z = 0.01 if cfg['type'] == 'elliptic_cylinder' else 0.36
             self.assertAlmostEqual(pose[2], expected_z)
+
+    def test_stadium_collision_primitives_follow_member_rotation(self):
+        link = self.model.find('link')
+        middle = link.find("collision[@name='blue_obs_collision_middle']")
+        for actual, expected in zip(map(float,middle.findtext('geometry/box/size').split()), (1.4,1.2,.7)):
+            self.assertAlmostEqual(actual,expected)
+        caps = [link.find(f"collision[@name='blue_obs_collision_cap_{i}']") for i in (0,1)]
+        for cap, expected_y in zip(caps, (-2.7, -1.3)):
+            pose = list(map(float,cap.findtext('pose').split()))
+            self.assertAlmostEqual(pose[0],0.)
+            self.assertAlmostEqual(pose[1],expected_y)
+            self.assertAlmostEqual(pose[2],.36)
+            self.assertAlmostEqual(float(cap.findtext('geometry/cylinder/radius')),.6)
+        self.assertFalse(link.findall('collision/geometry/polyline'))
 
     def test_parallel_axis_inertia(self):
         cfg = dict(type='cylinder', radius=1.0, height=2.0, mass=3.0)

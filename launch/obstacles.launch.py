@@ -28,7 +28,7 @@ Obstacle SDF details:
   cylinder        — native <cylinder> geometry for both visual and collision.
   elliptic_cyl.   — <polyline> stadium contour (straight sides + semicircular
                     caps) extruded to 'height'; flat top/bottom Z faces;
-                    identical geometry for visual and collision.
+                    box + cylinders for collision (DART has no polyline support).
   Both types have gravity disabled (<gravity>false</gravity>) so the obstacle
   remains at its spawn height. The gz-sim-velocity-control-system plugin lets
   the obstacle_controller set body-frame linear + angular velocity via cmd_vel.
@@ -139,14 +139,16 @@ def generate_elliptic_cylinder_sdf(name: str, p: dict) -> str:
     radius_y — half-width / cap radius along Y
     height   — vertical extent (flat top and bottom faces)
 
-    A <polyline> stadium contour is used for both visual and collision so they
-    match exactly.  The polyline extrudes from z=0 to z=h, so we offset it
-    by -h/2 via the geometry pose to centre it on the link origin.
+    A polygonal stadium contour is used for the visual. Collision uses the
+    analytical stadium (box + two cylinders), supported by DART. The visual
+    polyline extrudes from z=0 to z=h, so it is shifted by -h/2.
     """
     rx = float(p['radius_x'])
     ry = float(p['radius_y'])
     h  = float(p['height'])
     m  = float(p['mass'])
+    if rx < ry or ry <= 0 or h <= 0:
+        raise ValueError('Stadium needs radius_x >= radius_y > 0 and height > 0')
 
     # Inertia of a solid elliptic cylinder (close enough for a stadium shape)
     ixx    = (m / 12.0) * (3.0 * ry**2 + h**2)
@@ -161,6 +163,23 @@ def generate_elliptic_cylinder_sdf(name: str, p: dict) -> str:
     stadium_geom = _stadium_polyline_xml(rx, ry, h)
     # polyline starts at z=0; shift down so centre is at link origin
     geom_pose = f'<pose>0 0 {-h / 2.0:.4f} 0 0 0</pose>'
+    # DART cannot construct a collision from SDF polyline. A box plus two
+    # cylinders has exactly the same stadium boundary, on this same link.
+    half_len = rx - ry
+    collision_xml = ''
+    if half_len > 0:
+        collision_xml += (
+            '<collision name="collision_middle"><geometry><box>'
+            f'<size>{2*half_len} {2*ry} {h}</size>'
+            '</box></geometry></collision>'
+        )
+    for index, cap_x in enumerate((-half_len, half_len) if half_len > 0 else (0.0,)):
+        collision_xml += (
+            f'<collision name="collision_cap_{index}">'
+            f'<pose>{cap_x} 0 0 0 0 0</pose><geometry><cylinder>'
+            f'<radius>{ry}</radius><length>{h}</length>'
+            '</cylinder></geometry></collision>'
+        )
     return (
         '<?xml version="1.0"?>'
         '<sdf version="1.6">'
@@ -169,10 +188,7 @@ def generate_elliptic_cylinder_sdf(name: str, p: dict) -> str:
         '<link name="link">'
         '<gravity>false</gravity>'
         f'<inertial><mass>{m}</mass>{_inertia_xml(ixx, iyy, izz)}</inertial>'
-        f'<collision name="collision">'
-        f'{geom_pose}'
-        f'<geometry>{stadium_geom}</geometry>'
-        f'</collision>'
+        f'{collision_xml}'
         f'<visual name="visual">'
         f'{geom_pose}'
         f'<geometry>{stadium_geom}</geometry>'
@@ -227,14 +243,13 @@ def generate_rigid_formation_sdf(name: str, obstacles: dict) -> str:
                    [c*s*(ix-iy), s*s*ix + c*c*iy, 0.0],
                    [0.0, 0.0, iz]]
         bodies.append((mass, (x, y, z), rotated))
-        for tag in ('collision', 'visual'):
-            shape = source.find(tag)
-            shape.set('name', f'{member}_{tag}')
+        for shape in source.findall('collision') + source.findall('visual'):
+            shape.set('name', f"{member}_{shape.get('name')}")
             pose = shape.find('pose')
-            old_z = float(pose.text.split()[2]) if pose is not None else 0.0
+            old = list(map(float, pose.text.split())) if pose is not None else [0.0]*6
             if pose is None:
                 pose = ET.SubElement(shape, 'pose')
-            pose.text = f'{x} {y} {z + old_z} 0 0 {yaw}'
+            pose.text = f'{x+c*old[0]-s*old[1]} {y+s*old[0]+c*old[1]} {z+old[2]} 0 0 {yaw+old[5]}'
             link.append(shape)
     total_mass = sum(body[0] for body in bodies)
     centre = [sum(m * p[i] for m, p, _ in bodies) / total_mass for i in range(3)]

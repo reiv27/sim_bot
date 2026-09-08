@@ -1,9 +1,12 @@
 <?xml version="1.0"?>
 <robot xmlns:xacro="http://www.ros.org/wiki/xacro">
 
+	<xacro:arg name="lidar_samples" default="360"/>
+	<xacro:arg name="lidar_update_rate" default="10"/>
+
 	<!-- 2D GPU lidar. Parametrised by mount point so different robot models can
 	     reuse it: reactive_circumnav expects 360 rays over 12 m on `scan`. -->
-	<xacro:macro name="lidar_2d" params="parent:=chassis xyz:='0 0 0.1' samples:=360 range_max:=12">
+	<xacro:macro name="lidar_2d" params="parent:=chassis xyz:='0 0 0.1' samples:=$(arg lidar_samples) range_max:=12">
 
 		<joint name="lidar_joint" type="fixed">
 			<parent link="${parent}"/>
@@ -34,13 +37,13 @@
 
 			<sensor name="laser" type="gpu_lidar">
 				<visualize>false</visualize>
-				<update_rate>10</update_rate>
+				<update_rate>$(arg lidar_update_rate)</update_rate>
 				<lidar>
 					<scan>
 						<horizontal>
 							<samples>${samples}</samples>
-							<min_angle>-3.14</min_angle>
-							<max_angle>3.14</max_angle>
+							<min_angle>${-pi}</min_angle>
+							<max_angle>${pi}</max_angle>
 						</horizontal>
 					</scan>
 					<range>

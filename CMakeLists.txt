@@ -53,6 +53,7 @@ install(
 install(
   PROGRAMS
     scripts/obstacle_controller.py
+    scripts/lidar_noise.py
   DESTINATION lib/${PROJECT_NAME}
 )
 

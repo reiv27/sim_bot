@@ -1,4 +1,5 @@
 import os
+import math
 
 from ament_index_python.packages import get_package_share_directory
 
@@ -23,7 +24,13 @@ def _robot_state_publisher(context):
     # Process the URDF file
     pkg_path = os.path.join(get_package_share_directory('sim_bot'))
     xacro_file = os.path.join(pkg_path, 'description', ROBOT_DESCRIPTIONS[robot_model])
-    robot_description_config = xacro.process_file(xacro_file)
+    profile = LaunchConfiguration('lidar_profile').perform(context)
+    rate = LaunchConfiguration('lidar_update_rate').perform(context)
+    if not math.isfinite(float(rate)) or float(rate) <= 0:
+        raise ValueError('lidar_update_rate must be finite and positive')
+    robot_description_config = xacro.process_file(
+        xacro_file, mappings={'lidar_samples': '3601' if profile == 'mid360_2d' else '360',
+                             'lidar_update_rate': rate})
 
     # Create a robot_state_publisher node
     params = {'robot_description': robot_description_config.toxml(),
@@ -40,10 +47,16 @@ def generate_launch_description():
 
     # Launch!
     return LaunchDescription([
+        DeclareLaunchArgument('lidar_update_rate', default_value='10',
+                              description='Simulated lidar update frequency in Hz'),
         DeclareLaunchArgument(
             'use_sim_time',
             default_value='false',
             description='Use sim time if true'),
+
+        DeclareLaunchArgument(
+            'lidar_profile', default_value='ideal', choices=['ideal', 'mid360_2d'],
+            description='Dense raw scan for the optional Mid-360 2D noise adapter'),
 
         DeclareLaunchArgument(
             'robot_model',
