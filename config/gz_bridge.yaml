@@ -35,7 +35,13 @@
   direction: GZ_TO_ROS
 
 - ros_topic_name: "/model/my_bot/pose_gt"
-  gz_topic_name: "/model/my_bot/pose"
+  gz_topic_name: "/profiling/my_bot/pose"
+  ros_type_name: "geometry_msgs/msg/PoseStamped"
+  gz_type_name: "gz.msgs.Pose"
+  direction: GZ_TO_ROS
+
+- ros_topic_name: "/model/rigid_group/pose_gt"
+  gz_topic_name: "/profiling/rigid_group/pose"
   ros_type_name: "geometry_msgs/msg/PoseStamped"
   gz_type_name: "gz.msgs.Pose"
   direction: GZ_TO_ROS

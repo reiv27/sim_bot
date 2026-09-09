@@ -21,6 +21,10 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(gz_sim_vendor REQUIRED)
 find_package(gz-sim8 REQUIRED)
+find_package(gz_msgs_vendor REQUIRED)
+find_package(gz-msgs10 REQUIRED)
+find_package(gz_transport_vendor REQUIRED)
+find_package(gz-transport13 REQUIRED)
 
 # Gazebo trajectory visual plugin
 add_library(trajectory_visual_plugin SHARED
@@ -29,7 +33,15 @@ add_library(trajectory_visual_plugin SHARED
 target_compile_features(trajectory_visual_plugin PUBLIC cxx_std_17)
 target_link_libraries(trajectory_visual_plugin gz-sim8::gz-sim8)
 
-install(TARGETS trajectory_visual_plugin
+add_library(ground_truth_pose_plugin SHARED
+  plugins/GroundTruthPosePlugin.cc)
+target_compile_features(ground_truth_pose_plugin PUBLIC cxx_std_17)
+target_link_libraries(ground_truth_pose_plugin
+  gz-sim8::gz-sim8
+  gz-msgs10::gz-msgs10
+  gz-transport13::gz-transport13)
+
+install(TARGETS trajectory_visual_plugin ground_truth_pose_plugin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION lib/${PROJECT_NAME})
