@@ -30,10 +30,10 @@ def _spawn_entity(context):
         executable='create',
         arguments=['-topic', 'robot_description',
                    '-name', LaunchConfiguration('robot_name'),
-                   '-x', '-3.0',
-                   '-y', '0.0',
+                   '-x', LaunchConfiguration('spawn_x'),
+                   '-y', LaunchConfiguration('spawn_y'),
                    '-z', ROBOT_SPAWN_Z[robot_model],
-                   '-Y', '-1.5708'],
+                   '-Y', LaunchConfiguration('spawn_yaw')],
         output='screen',
     )]
 
@@ -59,6 +59,20 @@ def generate_launch_description():
         default_value='my_bot',
         description='Entity name for the spawned robot in Gazebo'
     )
+
+    # Defaults reproduce the historical hardcoded spawn exactly, so existing
+    # experiments are unaffected unless a value is passed explicitly.
+    spawn_args = [
+        DeclareLaunchArgument(
+            'spawn_x', default_value='-3.0',
+            description='Robot spawn X in the world frame, metres'),
+        DeclareLaunchArgument(
+            'spawn_y', default_value='0.0',
+            description='Robot spawn Y in the world frame, metres'),
+        DeclareLaunchArgument(
+            'spawn_yaw', default_value='-1.5708',
+            description='Robot spawn yaw in the world frame, radians'),
+    ]
 
     rsp = IncludeLaunchDescription(
                 PythonLaunchDescriptionSource([os.path.join(
@@ -143,6 +157,7 @@ def generate_launch_description():
             get_package_share_directory(package_name), 'config', 'livox_mid360_noise.yaml')),
         robot_model_arg,
         robot_name_arg,
+        *spawn_args,
         gz_resource_path,
         rsp,
         joystick,

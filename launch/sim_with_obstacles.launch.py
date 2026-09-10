@@ -37,6 +37,9 @@ def generate_launch_description():
       'lidar_profile': LaunchConfiguration('lidar_profile'),
       'lidar_update_rate': LaunchConfiguration('lidar_update_rate'),
       'lidar_noise_config': LaunchConfiguration('lidar_noise_config'),
+      'spawn_x': LaunchConfiguration('spawn_x'),
+      'spawn_y': LaunchConfiguration('spawn_y'),
+      'spawn_yaw': LaunchConfiguration('spawn_yaw'),
     }.items(),
   )
 
@@ -71,6 +74,18 @@ def generate_launch_description():
       default_value='sim_bot',
       choices=['kobuki', 'sim_bot'],
       description='Robot description to simulate (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'spawn_x', default_value='-3.0',
+      description='Robot spawn X, metres (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'spawn_y', default_value='0.0',
+      description='Robot spawn Y, metres (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'spawn_yaw', default_value='-1.5708',
+      description='Robot spawn yaw, radians (same as launch_sim.launch.py)',
     ),
     DeclareLaunchArgument(
       'obstacles_config',
