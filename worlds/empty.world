@@ -39,6 +39,13 @@
       <color>1.0 0.2 0.0 1.0</color>
       <max_markers>210</max_markers>
     </plugin>
+    <plugin
+      filename="libground_truth_pose_plugin.so"
+      name="ground_truth_pose::GroundTruthPosePlugin">
+      <robot_name>my_bot</robot_name>
+      <formation_name>rigid_group</formation_name>
+      <update_rate>50</update_rate>
+    </plugin>
     <light type="directional" name="sun">
       <visualize>false</visualize>
       <cast_shadows>true</cast_shadows>

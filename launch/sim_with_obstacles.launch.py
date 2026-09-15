@@ -33,6 +33,13 @@ def generate_launch_description():
     ),
     launch_arguments={
       'world': LaunchConfiguration('world'),
+      'robot_model': LaunchConfiguration('robot_model'),
+      'lidar_profile': LaunchConfiguration('lidar_profile'),
+      'lidar_update_rate': LaunchConfiguration('lidar_update_rate'),
+      'lidar_noise_config': LaunchConfiguration('lidar_noise_config'),
+      'spawn_x': LaunchConfiguration('spawn_x'),
+      'spawn_y': LaunchConfiguration('spawn_y'),
+      'spawn_yaw': LaunchConfiguration('spawn_yaw'),
     }.items(),
   )
 
@@ -51,10 +58,34 @@ def generate_launch_description():
   )
 
   return LaunchDescription([
+    DeclareLaunchArgument('lidar_update_rate', default_value='10',
+                         description='Simulated lidar update frequency in Hz'),
+    DeclareLaunchArgument('lidar_profile', default_value='ideal',
+                         choices=['ideal', 'mid360_2d']),
+    DeclareLaunchArgument('lidar_noise_config', default_value=os.path.join(
+        share, 'config', 'livox_mid360_noise.yaml')),
     DeclareLaunchArgument(
       'world',
       default_value=default_world,
       description='Gazebo world file (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'robot_model',
+      default_value='sim_bot',
+      choices=['kobuki', 'sim_bot'],
+      description='Robot description to simulate (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'spawn_x', default_value='-3.0',
+      description='Robot spawn X, metres (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'spawn_y', default_value='0.0',
+      description='Robot spawn Y, metres (same as launch_sim.launch.py)',
+    ),
+    DeclareLaunchArgument(
+      'spawn_yaw', default_value='-1.5708',
+      description='Robot spawn yaw, radians (same as launch_sim.launch.py)',
     ),
     DeclareLaunchArgument(
       'obstacles_config',

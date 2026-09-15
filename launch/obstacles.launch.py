@@ -28,7 +28,7 @@ Obstacle SDF details:
   cylinder        — native <cylinder> geometry for both visual and collision.
   elliptic_cyl.   — <polyline> stadium contour (straight sides + semicircular
                     caps) extruded to 'height'; flat top/bottom Z faces;
-                    identical geometry for visual and collision.
+                    box + cylinders for collision (DART has no polyline support).
   Both types have gravity disabled (<gravity>false</gravity>) so the obstacle
   remains at its spawn height. The gz-sim-velocity-control-system plugin lets
   the obstacle_controller set body-frame linear + angular velocity via cmd_vel.
@@ -41,6 +41,7 @@ Trajectory editing note:
 import math
 import os
 import tempfile
+import xml.etree.ElementTree as ET
 
 import yaml
 from ament_index_python.packages import get_package_share_directory
@@ -138,14 +139,16 @@ def generate_elliptic_cylinder_sdf(name: str, p: dict) -> str:
     radius_y — half-width / cap radius along Y
     height   — vertical extent (flat top and bottom faces)
 
-    A <polyline> stadium contour is used for both visual and collision so they
-    match exactly.  The polyline extrudes from z=0 to z=h, so we offset it
-    by -h/2 via the geometry pose to centre it on the link origin.
+    A polygonal stadium contour is used for the visual. Collision uses the
+    analytical stadium (box + two cylinders), supported by DART. The visual
+    polyline extrudes from z=0 to z=h, so it is shifted by -h/2.
     """
     rx = float(p['radius_x'])
     ry = float(p['radius_y'])
     h  = float(p['height'])
     m  = float(p['mass'])
+    if rx < ry or ry <= 0 or h <= 0:
+        raise ValueError('Stadium needs radius_x >= radius_y > 0 and height > 0')
 
     # Inertia of a solid elliptic cylinder (close enough for a stadium shape)
     ixx    = (m / 12.0) * (3.0 * ry**2 + h**2)
@@ -160,6 +163,23 @@ def generate_elliptic_cylinder_sdf(name: str, p: dict) -> str:
     stadium_geom = _stadium_polyline_xml(rx, ry, h)
     # polyline starts at z=0; shift down so centre is at link origin
     geom_pose = f'<pose>0 0 {-h / 2.0:.4f} 0 0 0</pose>'
+    # DART cannot construct a collision from SDF polyline. A box plus two
+    # cylinders has exactly the same stadium boundary, on this same link.
+    half_len = rx - ry
+    collision_xml = ''
+    if half_len > 0:
+        collision_xml += (
+            '<collision name="collision_middle"><geometry><box>'
+            f'<size>{2*half_len} {2*ry} {h}</size>'
+            '</box></geometry></collision>'
+        )
+    for index, cap_x in enumerate((-half_len, half_len) if half_len > 0 else (0.0,)):
+        collision_xml += (
+            f'<collision name="collision_cap_{index}">'
+            f'<pose>{cap_x} 0 0 0 0 0</pose><geometry><cylinder>'
+            f'<radius>{ry}</radius><length>{h}</length>'
+            '</cylinder></geometry></collision>'
+        )
     return (
         '<?xml version="1.0"?>'
         '<sdf version="1.6">'
@@ -168,10 +188,7 @@ def generate_elliptic_cylinder_sdf(name: str, p: dict) -> str:
         '<link name="link">'
         '<gravity>false</gravity>'
         f'<inertial><mass>{m}</mass>{_inertia_xml(ixx, iyy, izz)}</inertial>'
-        f'<collision name="collision">'
-        f'{geom_pose}'
-        f'<geometry>{stadium_geom}</geometry>'
-        f'</collision>'
+        f'{collision_xml}'
         f'<visual name="visual">'
         f'{geom_pose}'
         f'<geometry>{stadium_geom}</geometry>'
@@ -187,6 +204,71 @@ def _load_obstacle_params(config_path: str) -> dict:
     with open(config_path, 'r', encoding='utf-8') as fh:
         raw = yaml.safe_load(fh) or {}
     return raw.get('obstacle_controller', {}).get('ros__parameters', {})
+
+
+def generate_rigid_formation_sdf(name: str, obstacles: dict) -> str:
+    """One rigid link with separate collision/visual shapes; gaps stay empty.
+
+    Offsets are expressed in the formation frame. Its origin is at ground
+    level, with each member's centre at height/2 + 0.01. Aggregate inertia is
+    expressed at the combined centre of mass in axes parallel to this frame.
+    """
+    if not obstacles:
+        raise ValueError('A rigid formation needs at least one obstacle')
+    root = ET.Element('sdf', version='1.6')
+    model = ET.SubElement(root, 'model', name=name)
+    model.append(ET.fromstring(_velocity_control_plugin()))
+    link = ET.SubElement(model, 'link', name='formation_link')
+    ET.SubElement(link, 'gravity').text = 'false'
+    bodies = []
+    for member, cfg in obstacles.items():
+        if any(key in cfg for key in ('init_x', 'init_y', 'init_yaw')):
+            raise ValueError(f'{member}: use offset_x/y/yaw inside a formation')
+        generator = {
+            'cylinder': generate_cylinder_sdf,
+            'elliptic_cylinder': generate_elliptic_cylinder_sdf,
+        }[cfg.get('type', 'cylinder')]
+        source = ET.fromstring(generator(member, cfg)).find('model/link')
+        x = float(cfg.get('offset_x', 0.0))
+        y = float(cfg.get('offset_y', 0.0))
+        z = float(cfg['height']) / 2.0 + 0.01
+        yaw = float(cfg.get('offset_yaw', 0.0))
+        mass = float(cfg['mass'])
+        if mass <= 0:
+            raise ValueError(f'{member}: mass must be positive')
+        c, s = math.cos(yaw), math.sin(yaw)
+        inertia = source.find('inertial/inertia')
+        ix, iy, iz = [float(inertia.findtext(k)) for k in ('ixx', 'iyy', 'izz')]
+        rotated = [[c*c*ix + s*s*iy, c*s*(ix-iy), 0.0],
+                   [c*s*(ix-iy), s*s*ix + c*c*iy, 0.0],
+                   [0.0, 0.0, iz]]
+        bodies.append((mass, (x, y, z), rotated))
+        for shape in source.findall('collision') + source.findall('visual'):
+            shape.set('name', f"{member}_{shape.get('name')}")
+            pose = shape.find('pose')
+            old = list(map(float, pose.text.split())) if pose is not None else [0.0]*6
+            if pose is None:
+                pose = ET.SubElement(shape, 'pose')
+            pose.text = f'{x+c*old[0]-s*old[1]} {y+s*old[0]+c*old[1]} {z+old[2]} 0 0 {yaw+old[5]}'
+            link.append(shape)
+    total_mass = sum(body[0] for body in bodies)
+    centre = [sum(m * p[i] for m, p, _ in bodies) / total_mass for i in range(3)]
+    tensor = [[0.0] * 3 for _ in range(3)]
+    for mass, pos, rotated in bodies:
+        d = [pos[i] - centre[i] for i in range(3)]
+        d2 = sum(v*v for v in d)
+        for i in range(3):
+            for j in range(3):
+                tensor[i][j] += rotated[i][j] + mass * (
+                    (d2 if i == j else 0.0) - d[i]*d[j])
+    inertial = ET.SubElement(link, 'inertial')
+    ET.SubElement(inertial, 'mass').text = str(total_mass)
+    ET.SubElement(inertial, 'pose').text = ' '.join(map(str, centre)) + ' 0 0 0'
+    inertia = ET.SubElement(inertial, 'inertia')
+    for key, i, j in [('ixx', 0, 0), ('iyy', 1, 1), ('izz', 2, 2),
+                      ('ixy', 0, 1), ('ixz', 0, 2), ('iyz', 1, 2)]:
+        ET.SubElement(inertia, key).text = str(tensor[i][j])
+    return ET.tostring(root, encoding='unicode')
 
 
 def _resolve_obstacle_config(name: str, obstacle_cfg: dict, profiles: dict) -> dict:
@@ -212,8 +294,18 @@ def _build_obstacle_actions(context):
     actions = []
     bridge_entries: list = []
 
-    for name in obstacle_names:
-        obs = _resolve_obstacle_config(name, params.get(name, {}), profiles)
+    obstacles = {
+        name: _resolve_obstacle_config(name, params[name], profiles)
+        for name in obstacle_names
+    }
+    formation = params.get('rigid_formation')
+    formation_sdf = None
+    if formation is not None:
+        name = formation['name']
+        formation_sdf = generate_rigid_formation_sdf(name, obstacles)
+        obstacles = {name: formation}
+
+    for name, obs in obstacles.items():
         obs_type = obs.get('type', 'cylinder')
         h = float(obs.get('height', 1.0))
         x = float(obs.get('init_x', 0.0))
@@ -221,7 +313,10 @@ def _build_obstacle_actions(context):
         z = h / 2.0 + 0.01
         yaw = float(obs.get('init_yaw', 0.0))
 
-        if obs_type == 'elliptic_cylinder':
+        if formation_sdf is not None:
+            sdf_content = formation_sdf
+            z = 0.0
+        elif obs_type == 'elliptic_cylinder':
             sdf_content = generate_elliptic_cylinder_sdf(name, obs)
         else:
             sdf_content = generate_cylinder_sdf(name, obs)

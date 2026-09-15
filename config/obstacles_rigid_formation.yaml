@@ -1,0 +1,52 @@
+# All member offsets are fixed in the formation frame (metres/radians).
+# A single Gazebo link carries the three separate collision shapes.
+obstacle_controller:
+  ros__parameters:
+    rigid_formation:
+      name: rigid_group
+      init_x: 0.0
+      init_y: 0.0
+      init_yaw: 0.0
+      trajectory: circular
+      linear_vel: 0.2
+      angular_vel: 0.10
+
+    obstacle_names: [blue_obs, red_obs, green_obs]
+
+    blue_obs:
+      type: elliptic_cylinder
+      radius_x: 1.3
+      radius_y: 0.6
+      height: 0.7
+      mass: 15.0
+      offset_x: 0.0
+      offset_y: -2.0
+      offset_yaw: 1.5707963267948966
+      color_r: 0.1
+      color_g: 0.3
+      color_b: 1.0
+
+    red_obs:
+      type: cylinder
+      radius: 0.7
+      height: 0.7
+      mass: 15.0
+      offset_x: 2.0
+      offset_y: 0.0
+      offset_yaw: 0.0
+      color_r: 1.0
+      color_g: 0.3
+      color_b: 0.1
+
+    green_obs:
+      type: elliptic_cylinder
+      radius_x: 1.3
+      radius_y: 0.6
+      height: 0.7
+      mass: 15.0
+      offset_x: 0.0
+      offset_y: 2.0
+      offset_yaw: 1.5707963267948966
+      color_r: 0.1
+      color_g: 0.9
+      color_b: 0.3
