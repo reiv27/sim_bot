@@ -32,6 +32,13 @@ To use the rigid obstacle formation included in the package:
   obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_rigid_formation.yaml
 ```
 
+To use the static three-body layout from the reference image:
+
+```bash
+./run.sh \
+  obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_static_layout.yaml
+```
+
 Container lifecycle:
 
 ```bash

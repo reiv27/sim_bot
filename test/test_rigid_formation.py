@@ -98,6 +98,22 @@ class RigidFormationTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             launch.generate_rigid_formation_sdf('bad', self.members)
 
+    def test_static_reference_layout(self):
+        path = ROOT / 'config/obstacles_static_layout.yaml'
+        params = yaml.safe_load(path.read_text())['obstacle_controller']['ros__parameters']
+        expected = {
+            'blue_obs': (-1.0, -8.0, -math.pi / 2),
+            'orange_obs': (-4.0, -10.0, 0.0),
+            'green_obs': (-5.0, -7.0, math.pi / 4),
+        }
+        self.assertEqual(params['obstacle_names'], list(expected))
+        for name, pose in expected.items():
+            obstacle = params[name]
+            self.assertEqual(obstacle['trajectory'], 'static')
+            self.assertAlmostEqual(obstacle['init_x'], pose[0])
+            self.assertAlmostEqual(obstacle['init_y'], pose[1])
+            self.assertAlmostEqual(obstacle['init_yaw'], pose[2])
+
 
 if __name__ == '__main__':
     unittest.main()

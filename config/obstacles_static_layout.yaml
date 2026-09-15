@@ -1,0 +1,50 @@
+# Static three-body layout reconstructed from the reference image.
+#
+# The default robot spawn is (-3, 0) with yaw=-pi/2, so it faces world -Y.
+# The obstacle coordinates place the blue body to the robot's left, the orange
+# cylinder slightly to its right, and the green body farther right. One grid
+# cell in the reference is treated as one metre.
+obstacle_controller:
+  ros__parameters:
+    obstacle_names: [blue_obs, orange_obs, green_obs]
+
+    blue_obs:
+      type: elliptic_cylinder
+      radius_x: 2.0
+      radius_y: 1.0
+      height: 0.7
+      mass: 15.0
+      init_x: -1.0
+      init_y: -8.0
+      init_yaw: -1.5707963267948966
+      trajectory: static
+      color_r: 0.1
+      color_g: 0.3
+      color_b: 1.0
+
+    orange_obs:
+      type: cylinder
+      radius: 1.0
+      height: 0.7
+      mass: 15.0
+      init_x: -4.0
+      init_y: -10.0
+      init_yaw: 0.0
+      trajectory: static
+      color_r: 1.0
+      color_g: 0.4
+      color_b: 0.1
+
+    green_obs:
+      type: elliptic_cylinder
+      radius_x: 2.5
+      radius_y: 0.7
+      height: 0.7
+      mass: 15.0
+      init_x: -5.0
+      init_y: -7.0
+      init_yaw: 0.7853981633974483
+      trajectory: static
+      color_r: 0.1
+      color_g: 0.9
+      color_b: 0.3
