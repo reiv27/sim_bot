@@ -3,6 +3,7 @@ set -euo pipefail
 
 image_name="${SIM_BOT_IMAGE:-sim-bot:jazzy}"
 container_name="${SIM_BOT_CONTAINER:-sim-bot}"
+gz_partition="${SIM_BOT_GZ_PARTITION:-${container_name}}"
 
 if ! docker image inspect "${image_name}" >/dev/null 2>&1; then
   echo "Docker image '${image_name}' does not exist. Run ./build.sh first." >&2
@@ -25,9 +26,14 @@ docker_args=(
   --network host
   --ipc host
   --env "DISPLAY=${DISPLAY}"
+  --env "GZ_PARTITION=${gz_partition}"
   --env QT_X11_NO_MITSHM=1
   --volume /tmp/.X11-unix:/tmp/.X11-unix:rw
 )
+
+if [[ -n "${SIM_BOT_ROS_DOMAIN_ID:-}" ]]; then
+  docker_args+=(--env "ROS_DOMAIN_ID=${SIM_BOT_ROS_DOMAIN_ID}")
+fi
 
 xauthority_path="${XAUTHORITY:-}"
 if [[ -z "${xauthority_path}" ]]; then

@@ -1,9 +1,10 @@
 # Static three-body layout reconstructed from the reference image.
 #
-# The default robot spawn is (-3, 0) with yaw=-pi/2, so it faces world -Y.
-# The obstacle coordinates place the blue body to the robot's left, the orange
-# cylinder slightly to its right, and the green body farther right. One grid
-# cell in the reference is treated as one metre.
+# The layout from the reference image is rotated +pi/2 counter-clockwise about
+# its arithmetic centre. The whole group is then centred at (-3, -8), directly
+# above the default robot position (-3, 0) in the chosen top-down view. One grid
+# cell in the reference is treated as one metre. Launch with spawn_yaw:=0 to
+# rotate the robot +pi/2 from its historical default yaw=-pi/2.
 obstacle_controller:
   ros__parameters:
     obstacle_names: [blue_obs, orange_obs, green_obs]
@@ -14,9 +15,9 @@ obstacle_controller:
       radius_y: 1.0
       height: 0.7
       mass: 15.0
-      init_x: -1.0
-      init_y: -8.0
-      init_yaw: -1.5707963267948966
+      init_x: -3.3333333333333335
+      init_y: -5.666666666666667
+      init_yaw: 0.0
       trajectory: static
       color_r: 0.1
       color_g: 0.3
@@ -27,9 +28,9 @@ obstacle_controller:
       radius: 1.0
       height: 0.7
       mass: 15.0
-      init_x: -4.0
-      init_y: -10.0
-      init_yaw: 0.0
+      init_x: -1.3333333333333333
+      init_y: -8.666666666666666
+      init_yaw: 1.5707963267948966
       trajectory: static
       color_r: 1.0
       color_g: 0.4
@@ -41,9 +42,9 @@ obstacle_controller:
       radius_y: 0.7
       height: 0.7
       mass: 15.0
-      init_x: -5.0
-      init_y: -7.0
-      init_yaw: 0.7853981633974483
+      init_x: -4.333333333333333
+      init_y: -9.666666666666666
+      init_yaw: 2.356194490192345
       trajectory: static
       color_r: 0.1
       color_g: 0.9

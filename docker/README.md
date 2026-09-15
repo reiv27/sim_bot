@@ -36,6 +36,7 @@ To use the static three-body layout from the reference image:
 
 ```bash
 ./run.sh \
+  spawn_yaw:=0 \
   obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_static_layout.yaml
 ```
 
@@ -54,6 +55,11 @@ The image and container names can be overridden without editing the scripts:
 SIM_BOT_IMAGE=my-sim:dev ./build.sh
 SIM_BOT_IMAGE=my-sim:dev SIM_BOT_CONTAINER=my-sim ./run.sh
 ```
+
+Each container uses its container name as a separate Gazebo transport partition,
+so two Gazebo worlds cannot accidentally discover each other. Override it, or
+optionally select a ROS domain, with `SIM_BOT_GZ_PARTITION` and
+`SIM_BOT_ROS_DOMAIN_ID`.
 
 The scripts pass the host X11 socket, available GPU devices and `/dev/input`
 into the container. If Gazebo reports an X11 authorization error, make sure the
