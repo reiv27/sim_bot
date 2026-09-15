@@ -102,15 +102,15 @@ class RigidFormationTests(unittest.TestCase):
         path = ROOT / 'config/obstacles_static_layout.yaml'
         params = yaml.safe_load(path.read_text())['obstacle_controller']['ros__parameters']
         expected = {
-            'blue_obs': (-10.0 / 3.0, -17.0 / 3.0, 0.0),
-            'orange_obs': (-4.0 / 3.0, -26.0 / 3.0, math.pi / 2),
-            'green_obs': (-13.0 / 3.0, -29.0 / 3.0, 3 * math.pi / 4),
+            'blue_obs': (14.0 / 3.0, 7.0 / 3.0, 0.0),
+            'orange_obs': (20.0 / 3.0, -2.0 / 3.0, math.pi / 2),
+            'green_obs': (11.0 / 3.0, -5.0 / 3.0, 3 * math.pi / 4),
         }
         self.assertEqual(params['obstacle_names'], list(expected))
         self.assertAlmostEqual(
-            sum(params[name]['init_x'] for name in expected) / len(expected), -3.0)
+            sum(params[name]['init_x'] for name in expected) / len(expected), 5.0)
         self.assertAlmostEqual(
-            sum(params[name]['init_y'] for name in expected) / len(expected), -8.0)
+            sum(params[name]['init_y'] for name in expected) / len(expected), 0.0)
         for name, pose in expected.items():
             obstacle = params[name]
             self.assertEqual(obstacle['trajectory'], 'static')
