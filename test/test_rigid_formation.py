@@ -91,6 +91,34 @@ class RigidFormationTests(unittest.TestCase):
         old = node._load_obstacle_configs_from_yaml(str(ROOT / 'config/obstacles.yaml'))
         self.assertIn('elliptic_obs', old)
 
+    def test_forward_layout_is_one_rigid_body_with_reference_member_poses(self):
+        path = ROOT / 'config/obstacles_forward.yaml'
+        params = yaml.safe_load(path.read_text())['obstacle_controller']['ros__parameters']
+        node = controller.ObstacleController.__new__(controller.ObstacleController)
+        configs = node._load_obstacle_configs_from_yaml(str(path))
+        self.assertEqual(list(configs), ['rigid_group'])
+        formation = configs['rigid_group']
+        self.assertEqual(formation['trajectory'], 'straight_spin')
+        self.assertEqual(formation['linear_vel'], 0.2)
+        self.assertEqual(formation['angular_vel'], 0.0)
+        self.assertEqual(formation['world_heading'], 0.0)
+
+        members = {name: params[name] for name in params['obstacle_names']}
+        model = ET.fromstring(
+            launch.generate_rigid_formation_sdf('rigid_group', members)).find('model')
+        self.assertEqual(len(model.findall('link')), 1)
+        expected = {
+            'blue_obs': (6.172533713030951, 2.965896694887001, 0.0),
+            'orange_obs': (9.154932573938098, -0.749274043744158, math.pi / 2),
+            'green_obs': (5.672533713030951, -2.216622651142844, 3 * math.pi / 4),
+        }
+        for name, world_pose in expected.items():
+            visual = model.find(f"link/visual[@name='{name}_visual']")
+            relative_pose = list(map(float, visual.findtext('pose').split()))
+            self.assertAlmostEqual(formation['init_x'] + relative_pose[0], world_pose[0])
+            self.assertAlmostEqual(formation['init_y'] + relative_pose[1], world_pose[1])
+            self.assertAlmostEqual(formation['init_yaw'] + relative_pose[5], world_pose[2])
+
     def test_reject_empty_group_and_ambiguous_world_positions(self):
         with self.assertRaises(ValueError):
             launch.generate_rigid_formation_sdf('empty', {})

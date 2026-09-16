@@ -61,6 +61,15 @@ To use the static three-body layout from the reference image:
   obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_static_layout.yaml
 ```
 
+To move the same three obstacles as one rigid formation along world `+X` at
+`0.2 m/s` (all relative positions and orientations remain fixed):
+
+```bash
+./run.sh \
+  spawn_yaw:=0 \
+  obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_forward.yaml
+```
+
 After the simulation has started, run the controller in a second terminal:
 
 ```bash
