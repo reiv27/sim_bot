@@ -1,14 +1,22 @@
 # Docker environment
 
-This directory runs `sim_bot` in Ubuntu 24.04 with ROS 2 Jazzy and Gazebo
-Harmonic. The host only needs Docker, an X11-compatible display and a working
-graphics driver.
+This directory builds `sim_bot` and the adjacent `reactive_circumnav` package
+in Ubuntu 24.04 with ROS 2 Jazzy and Gazebo Harmonic. The host only needs
+Docker, an X11-compatible display and a working graphics driver.
 
 Run all commands from this directory:
 
 ```bash
 ./build.sh
 ./run.sh
+```
+
+By default, `build.sh` expects the algorithm source at
+`../../reactive_circumnav` relative to this directory. Override it when the
+repository is elsewhere:
+
+```bash
+REACTIVE_CIRCUMNAV_SOURCE=/path/to/reactive_circumnav ./build.sh
 ```
 
 `run.sh` starts the container in the background and launches the robot together
@@ -40,11 +48,31 @@ To use the static three-body layout from the reference image:
   obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_static_layout.yaml
 ```
 
+After the simulation has started, run the controller in a second terminal:
+
+```bash
+./algorithm.sh
+```
+
+The controller runs inside the existing simulation container, so it uses the
+same ROS 2 Jazzy installation, DDS implementation and ROS domain as the
+Gazebo bridge. Press `Ctrl+C` in the second terminal to stop the controller.
+Its telemetry is written to `/tmp/reactive_circumnav.csv` in the container by
+default. The parameter file and telemetry path can be overridden without
+editing the scripts:
+
+```bash
+REACTIVE_CIRCUMNAV_PARAMS_FILE=/path/in/container/controller_config.yaml \
+REACTIVE_CIRCUMNAV_TELEMETRY_LOG=/tmp/experiment.csv \
+  ./algorithm.sh
+```
+
 Container lifecycle:
 
 ```bash
 ./exec.sh                  # interactive shell with ROS environment sourced
 ./exec.sh ros2 topic list  # execute one command in the container
+./algorithm.sh             # run reactive_circumnav in the container
 ./restart.sh               # recreate and restart the simulation
 ./stop.sh                  # stop and remove the container
 ```

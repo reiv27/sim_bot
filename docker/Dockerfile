@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1
 FROM osrf/ros:jazzy-desktop-full
 
 SHELL ["/bin/bash", "-o", "pipefail", "-c"]
@@ -23,10 +24,17 @@ WORKDIR /opt/sim_bot_ws
 
 COPY . src/sim_bot
 
+COPY --from=reactive_circumnav CMakeLists.txt package.xml src/reactive_circumnav/
+COPY --from=reactive_circumnav config src/reactive_circumnav/config
+COPY --from=reactive_circumnav include src/reactive_circumnav/include
+COPY --from=reactive_circumnav launch src/reactive_circumnav/launch
+COPY --from=reactive_circumnav src src/reactive_circumnav/src
+COPY --from=reactive_circumnav worlds src/reactive_circumnav/worlds
+
 RUN source /opt/ros/jazzy/setup.bash \
   && colcon build \
        --merge-install \
-       --packages-select sim_bot \
+       --packages-select sim_bot reactive_circumnav \
        --cmake-args -DBUILD_TESTING=OFF
 
 COPY docker/entrypoint.sh /usr/local/bin/sim-bot-entrypoint
