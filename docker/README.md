@@ -102,3 +102,8 @@ The scripts pass the host X11 socket, available GPU devices and `/dev/input`
 into the container. If Gazebo reports an X11 authorization error, make sure the
 host `XAUTHORITY` variable points to a readable authority file before running
 `./run.sh`.
+
+On hybrid AMD/NVIDIA systems, `run.sh` automatically enables NVIDIA PRIME
+render offload when the Docker `nvidia` runtime and `nvidia-smi` are available.
+Gazebo GUI, Ogre2 cameras and the GPU lidar then use the discrete NVIDIA GPU
+instead of software rendering or the integrated GPU.
