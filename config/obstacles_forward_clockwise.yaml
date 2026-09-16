@@ -1,0 +1,53 @@
+# The rigid formation translates along world +X while rotating clockwise about
+# its centre. All member offsets and orientations remain rigidly coupled.
+obstacle_controller:
+  ros__parameters:
+    rigid_formation:
+      name: rigid_group
+      init_x: 7.0
+      init_y: 0.0
+      init_yaw: 0.0
+      trajectory: straight_spin
+      linear_vel: 0.2
+      angular_vel: -0.1
+      world_heading: 0.0
+
+    obstacle_names: [blue_obs, orange_obs, green_obs]
+
+    blue_obs:
+      type: elliptic_cylinder
+      radius_x: 3.0
+      radius_y: 1.5
+      height: 0.7
+      mass: 15.0
+      offset_x: -0.827466286969049
+      offset_y: 2.965896694887001
+      offset_yaw: 0.0
+      color_r: 0.1
+      color_g: 0.3
+      color_b: 1.0
+
+    orange_obs:
+      type: cylinder
+      radius: 1.5
+      height: 0.7
+      mass: 15.0
+      offset_x: 2.154932573938098
+      offset_y: -0.749274043744158
+      offset_yaw: 1.5707963267948966
+      color_r: 1.0
+      color_g: 0.4
+      color_b: 0.1
+
+    green_obs:
+      type: elliptic_cylinder
+      radius_x: 3.5
+      radius_y: 1.0
+      height: 0.7
+      mass: 15.0
+      offset_x: -1.327466286969049
+      offset_y: -2.216622651142844
+      offset_yaw: 2.356194490192345
+      color_r: 0.1
+      color_g: 0.9
+      color_b: 0.3

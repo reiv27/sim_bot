@@ -119,6 +119,29 @@ class RigidFormationTests(unittest.TestCase):
             self.assertAlmostEqual(formation['init_y'] + relative_pose[1], world_pose[1])
             self.assertAlmostEqual(formation['init_yaw'] + relative_pose[5], world_pose[2])
 
+    def test_forward_clockwise_layout_translates_and_spins_clockwise(self):
+        path = ROOT / 'config/obstacles_forward_clockwise.yaml'
+        node = controller.ObstacleController.__new__(controller.ObstacleController)
+        configs = node._load_obstacle_configs_from_yaml(str(path))
+        self.assertEqual(list(configs), ['rigid_group'])
+        formation = configs['rigid_group']
+        self.assertEqual(formation['trajectory'], 'straight_spin')
+        self.assertEqual(formation['linear_vel'], 0.2)
+        self.assertEqual(formation['angular_vel'], -0.1)
+        self.assertEqual(formation['world_heading'], 0.0)
+
+    def test_counter_clockwise_circle_layout_orbits_and_spins_ccw(self):
+        path = ROOT / 'config/obstacles_circle_ccw.yaml'
+        node = controller.ObstacleController.__new__(controller.ObstacleController)
+        configs = node._load_obstacle_configs_from_yaml(str(path))
+        self.assertEqual(list(configs), ['rigid_group'])
+        formation = configs['rigid_group']
+        self.assertEqual(formation['trajectory'], 'circular')
+        self.assertEqual(formation['linear_vel'], 0.2)
+        self.assertEqual(formation['angular_vel'], 0.1)
+        self.assertAlmostEqual(
+            formation['linear_vel'] / formation['angular_vel'], 2.0)
+
     def test_reject_empty_group_and_ambiguous_world_positions(self):
         with self.assertRaises(ValueError):
             launch.generate_rigid_formation_sdf('empty', {})

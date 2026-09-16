@@ -70,6 +70,24 @@ To move the same three obstacles as one rigid formation along world `+X` at
   obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_forward.yaml
 ```
 
+To move the rigid formation along world `+X` while it rotates clockwise at
+`0.1 rad/s`:
+
+```bash
+./run.sh \
+  spawn_yaw:=0 \
+  obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_forward_clockwise.yaml
+```
+
+To move the formation centre counter-clockwise on a `2 m` radius circle while
+the formation itself rotates counter-clockwise at `0.1 rad/s`:
+
+```bash
+./run.sh \
+  spawn_yaw:=0 \
+  obstacles_config:=/opt/sim_bot_ws/install/share/sim_bot/config/obstacles_circle_ccw.yaml
+```
+
 After the simulation has started, run the controller in a second terminal:
 
 ```bash
