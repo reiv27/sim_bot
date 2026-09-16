@@ -1,19 +1,18 @@
 # Approximation of the horizontal scan delivered to reactive_circumnav.
-# Official: https://www.livoxtech.com/mid-360/specs (accessed 2026-09-07).
-# Range precision 1 sigma <=0.02 m at 10 m, <=0.03 m at 0.2 m;
-# angular precision <0.15 degrees. Tests at 25 C, 80% target reflectivity.
-# Model assumptions: independent zero-mean Gaussian errors, linear sigma
-# interpolation over 0.2..10 m, held constant outside. Angular sigma uses the
-# conservative specification boundary. Seed fixes the noise sequence only.
+# Range noise is an experiment profile rather than the Mid-360 data-sheet
+# curve: its 1-sigma error grows linearly from 0.005 m at 0.2 m to 0.02 m at
+# 10 m and stays constant outside that interval. Angular sigma uses the
+# conservative 0.15 degree Mid-360 specification boundary. Errors are
+# independent, zero-mean Gaussian samples; the seed fixes the sequence only.
 # Not a 3D non-repeating scan model; no material, fog, motion-distortion,
 # systematic bias, or false-return model (their distributions are unspecified).
 lidar_noise:
   ros__parameters:
-    input_topic: /scan
-    output_topic: /scan_livox
+    input_topic: /scan_raw
+    output_topic: /scan
     reference_topic: /scan_reference
     output_samples: 360
-    range_sigma_near: 0.03
+    range_sigma_near: 0.005
     range_sigma_far: 0.02
     angular_sigma_deg: 0.15
     seed: 360

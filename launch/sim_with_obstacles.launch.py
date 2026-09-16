@@ -35,6 +35,7 @@ def generate_launch_description():
       'world': LaunchConfiguration('world'),
       'robot_model': LaunchConfiguration('robot_model'),
       'lidar_profile': LaunchConfiguration('lidar_profile'),
+      'lidar_noise_enabled': LaunchConfiguration('lidar_noise_enabled'),
       'lidar_update_rate': LaunchConfiguration('lidar_update_rate'),
       'lidar_noise_config': LaunchConfiguration('lidar_noise_config'),
       'spawn_x': LaunchConfiguration('spawn_x'),
@@ -62,6 +63,9 @@ def generate_launch_description():
                          description='Simulated lidar update frequency in Hz'),
     DeclareLaunchArgument('lidar_profile', default_value='ideal',
                          choices=['ideal', 'mid360_2d']),
+    DeclareLaunchArgument('lidar_noise_enabled', default_value='false',
+                         choices=['true', 'false'],
+                         description='Publish a noisy 360-ray scan on /scan'),
     DeclareLaunchArgument('lidar_noise_config', default_value=os.path.join(
         share, 'config', 'livox_mid360_noise.yaml')),
     DeclareLaunchArgument(

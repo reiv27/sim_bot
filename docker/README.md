@@ -29,8 +29,21 @@ ros2 launch sim_bot sim_with_obstacles.launch.py
 ROS launch arguments can be passed directly to `run.sh` or `restart.sh`:
 
 ```bash
-./run.sh robot_model:=kobuki lidar_profile:=mid360_2d
+./run.sh robot_model:=kobuki lidar_noise_enabled:=true
 ```
+
+Lidar noise is disabled by default. Enable the Mid-360 approximation with:
+
+```bash
+./run.sh lidar_noise_enabled:=true
+```
+
+When enabled, Gazebo publishes a dense 3601-ray source on `/scan_raw`; the
+noise adapter publishes the noisy 360-ray measurement on `/scan` for the
+controller and the matched clean measurement on `/scan_reference`. Noise
+parameters and the deterministic random seed are defined in
+`config/livox_mid360_noise.yaml`. The legacy `lidar_profile:=mid360_2d`
+argument also enables this pipeline.
 
 To use the rigid obstacle formation included in the package:
 

@@ -19,7 +19,7 @@ from sensor_msgs.msg import LaserScan
 
 
 def corrupt_scan(ranges, range_min, range_max, rng, output_samples=360,
-                 sigma_near=0.03, sigma_far=0.02, angular_sigma_deg=0.15):
+                 sigma_near=0.005, sigma_far=0.02, angular_sigma_deg=0.15):
     """Input spans [-pi, pi] including duplicate endpoint, returns paired scans.
 
     Invalid/no-return rays remain no-return. Values pushed outside the sensing
@@ -48,9 +48,9 @@ def corrupt_scan(ranges, range_min, range_max, rng, output_samples=360,
 class LidarNoise(Node):
     def __init__(self):
         super().__init__('lidar_noise')
-        defaults = dict(input_topic='/scan', output_topic='/scan_livox',
+        defaults = dict(input_topic='/scan_raw', output_topic='/scan',
                         reference_topic='/scan_reference', output_samples=360,
-                        range_sigma_near=0.03, range_sigma_far=0.02,
+                        range_sigma_near=0.005, range_sigma_far=0.02,
                         angular_sigma_deg=0.15, seed=360, audit_path='')
         for key, value in defaults.items():
             self.declare_parameter(key, value)
@@ -75,7 +75,9 @@ class LidarNoise(Node):
                                   'range_noise_n','range_noise_sum','range_noise_sum_sq',
                                   'angle_noise_n','angle_noise_sum','angle_noise_sum_sq'])
         self.received = 0
-        self.get_logger().info('Mid-360 2D approximation: /scan -> /scan_livox; seed=' + str(p['seed']))
+        self.get_logger().info(
+            f"Mid-360 2D approximation: {p['input_topic']} -> {p['output_topic']}; "
+            f"seed={p['seed']}")
 
     def on_scan(self, scan):
         if len(scan.ranges) < 3600 or not math.isclose(

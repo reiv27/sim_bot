@@ -18,6 +18,13 @@ ROBOT_DESCRIPTIONS = {
 }
 
 
+def _lidar_samples(profile, noise_enabled):
+    enabled = str(noise_enabled).strip().lower()
+    if enabled not in ('true', 'false'):
+        raise ValueError('lidar_noise_enabled must be true or false')
+    return '3601' if enabled == 'true' or profile == 'mid360_2d' else '360'
+
+
 def _robot_state_publisher(context):
     robot_model = LaunchConfiguration('robot_model').perform(context)
 
@@ -25,11 +32,12 @@ def _robot_state_publisher(context):
     pkg_path = os.path.join(get_package_share_directory('sim_bot'))
     xacro_file = os.path.join(pkg_path, 'description', ROBOT_DESCRIPTIONS[robot_model])
     profile = LaunchConfiguration('lidar_profile').perform(context)
+    noise_enabled = LaunchConfiguration('lidar_noise_enabled').perform(context)
     rate = LaunchConfiguration('lidar_update_rate').perform(context)
     if not math.isfinite(float(rate)) or float(rate) <= 0:
         raise ValueError('lidar_update_rate must be finite and positive')
     robot_description_config = xacro.process_file(
-        xacro_file, mappings={'lidar_samples': '3601' if profile == 'mid360_2d' else '360',
+        xacro_file, mappings={'lidar_samples': _lidar_samples(profile, noise_enabled),
                              'lidar_update_rate': rate})
 
     # Create a robot_state_publisher node
@@ -57,6 +65,10 @@ def generate_launch_description():
         DeclareLaunchArgument(
             'lidar_profile', default_value='ideal', choices=['ideal', 'mid360_2d'],
             description='Dense raw scan for the optional Mid-360 2D noise adapter'),
+
+        DeclareLaunchArgument(
+            'lidar_noise_enabled', default_value='false', choices=['true', 'false'],
+            description='Use a dense raw scan for the lidar noise adapter'),
 
         DeclareLaunchArgument(
             'robot_model',

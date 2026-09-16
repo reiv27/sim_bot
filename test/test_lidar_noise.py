@@ -6,14 +6,33 @@ import xml.etree.ElementTree as ET
 
 import numpy as np
 import xacro
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 spec = importlib.util.spec_from_file_location('lidar_noise', ROOT / 'scripts/lidar_noise.py')
 noise = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(noise)
+rsp_spec = importlib.util.spec_from_file_location('rsp_launch', ROOT / 'launch/rsp.launch.py')
+rsp = importlib.util.module_from_spec(rsp_spec)
+rsp_spec.loader.exec_module(rsp)
 
 
 class LidarNoiseTests(unittest.TestCase):
+    def test_noise_flag_selects_dense_raw_scan(self):
+        self.assertEqual(rsp._lidar_samples('ideal', 'false'), '360')
+        self.assertEqual(rsp._lidar_samples('ideal', 'true'), '3601')
+        self.assertEqual(rsp._lidar_samples('mid360_2d', 'false'), '3601')
+        with self.assertRaises(ValueError):
+            rsp._lidar_samples('ideal', 'sometimes')
+
+        config = yaml.safe_load((ROOT / 'config/livox_mid360_noise.yaml').read_text())
+        params = config['lidar_noise']['ros__parameters']
+        self.assertEqual(params['input_topic'], '/scan_raw')
+        self.assertEqual(params['output_topic'], '/scan')
+        self.assertEqual(params['range_sigma_near'], .005)
+        self.assertEqual(params['range_sigma_far'], .02)
+        self.assertLess(params['range_sigma_near'], params['range_sigma_far'])
+
     def test_zero_noise_preserves_geometry_and_missing_returns(self):
         raw = np.linspace(1.0, 5.0, 3601)
         raw[100:500] = np.inf
@@ -31,7 +50,7 @@ class LidarNoiseTests(unittest.TestCase):
             self.assertEqual(len(measured), 360)
             errors.extend(e)
             angles.extend(a)
-        expected_sigma = .03 + (.02-.03)*(2.0-.2)/(10.-.2)
+        expected_sigma = .005 + (.02-.005)*(2.0-.2)/(10.-.2)
         self.assertLess(abs(np.mean(errors)), .0005)
         self.assertAlmostEqual(np.std(errors), expected_sigma, delta=.0005)
         self.assertAlmostEqual(np.std(angles), math.radians(.15), delta=.00003)

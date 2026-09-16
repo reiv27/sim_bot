@@ -10,7 +10,7 @@ from launch.launch_description_sources import PythonLaunchDescriptionSource
 from launch.substitutions import EnvironmentVariable, LaunchConfiguration
 
 from launch_ros.actions import Node
-from launch.conditions import IfCondition
+from launch.conditions import IfCondition, UnlessCondition
 from launch.substitutions import PythonExpression
 
 
@@ -80,6 +80,7 @@ def generate_launch_description():
                 )]), launch_arguments={'use_sim_time': 'true',
                                       'use_ros2_control': 'false',
                                       'lidar_profile': LaunchConfiguration('lidar_profile'),
+                                      'lidar_noise_enabled': LaunchConfiguration('lidar_noise_enabled'),
                                       'lidar_update_rate': LaunchConfiguration('lidar_update_rate'),
                                       'robot_model': robot_model}.items()
     )
@@ -133,14 +134,27 @@ def generate_launch_description():
     )
 
     bridge_params = os.path.join(get_package_share_directory(package_name),'config','gz_bridge.yaml')
+    noise_enabled = PythonExpression([
+        "'", LaunchConfiguration('lidar_noise_enabled'), "' == 'true' or '",
+        LaunchConfiguration('lidar_profile'), "' == 'mid360_2d'",
+    ])
+    bridge_arguments = [
+        '--ros-args',
+        '-p',
+        f'config_file:={bridge_params}',
+    ]
     ros_gz_bridge = Node(
         package="ros_gz_bridge",
         executable="parameter_bridge",
-        arguments=[
-            '--ros-args',
-            '-p',
-            f'config_file:={bridge_params}',
-        ]
+        arguments=bridge_arguments,
+        condition=UnlessCondition(noise_enabled),
+    )
+    ros_gz_bridge_with_noise = Node(
+        package="ros_gz_bridge",
+        executable="parameter_bridge",
+        arguments=bridge_arguments,
+        remappings=[('/scan', '/scan_raw')],
+        condition=IfCondition(noise_enabled),
     )
     ros_gz_image_bridge = Node(
         package="ros_gz_image",
@@ -153,6 +167,9 @@ def generate_launch_description():
                               description='Simulated lidar update frequency in Hz'),
         DeclareLaunchArgument('lidar_profile', default_value='ideal',
                               choices=['ideal', 'mid360_2d']),
+        DeclareLaunchArgument('lidar_noise_enabled', default_value='false',
+                              choices=['true', 'false'],
+                              description='Publish a noisy 360-ray scan on /scan'),
         DeclareLaunchArgument('lidar_noise_config', default_value=os.path.join(
             get_package_share_directory(package_name), 'config', 'livox_mid360_noise.yaml')),
         robot_model_arg,
@@ -165,12 +182,11 @@ def generate_launch_description():
         spawn_entity,
         world_arg,
         ros_gz_bridge,
+        ros_gz_bridge_with_noise,
         ros_gz_image_bridge,
         Node(package='sim_bot', executable='lidar_noise.py', name='lidar_noise',
              parameters=[LaunchConfiguration('lidar_noise_config'), {'use_sim_time': True}],
-             condition=IfCondition(PythonExpression([
-                 "'", LaunchConfiguration('lidar_profile'), "' == 'mid360_2d'"
-             ])), output='screen'),
+             condition=IfCondition(noise_enabled), output='screen'),
         #diff_drive_spawner,  # Uncommit for ros2_control
         #joint_broad_spawner  # Uncommit for ros2_control
         # ultrasonic_data,
