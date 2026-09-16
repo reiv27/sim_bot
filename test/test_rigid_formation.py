@@ -102,13 +102,13 @@ class RigidFormationTests(unittest.TestCase):
         path = ROOT / 'config/obstacles_static_layout.yaml'
         params = yaml.safe_load(path.read_text())['obstacle_controller']['ros__parameters']
         expected = {
-            'blue_obs': (14.0 / 3.0, 7.0 / 3.0, 0.0),
-            'orange_obs': (20.0 / 3.0, -2.0 / 3.0, math.pi / 2),
-            'green_obs': (11.0 / 3.0, -5.0 / 3.0, 3 * math.pi / 4),
+            'blue_obs': (6.172533713030951, 2.965896694887001, 0.0),
+            'orange_obs': (9.154932573938098, -0.749274043744158, math.pi / 2),
+            'green_obs': (5.672533713030951, -2.216622651142844, 3 * math.pi / 4),
         }
         self.assertEqual(params['obstacle_names'], list(expected))
         self.assertAlmostEqual(
-            sum(params[name]['init_x'] for name in expected) / len(expected), 5.0)
+            sum(params[name]['init_x'] for name in expected) / len(expected), 7.0)
         self.assertAlmostEqual(
             sum(params[name]['init_y'] for name in expected) / len(expected), 0.0)
         for name, pose in expected.items():
@@ -117,6 +117,54 @@ class RigidFormationTests(unittest.TestCase):
             self.assertAlmostEqual(obstacle['init_x'], pose[0])
             self.assertAlmostEqual(obstacle['init_y'], pose[1])
             self.assertAlmostEqual(obstacle['init_yaw'], pose[2])
+
+        self.assertEqual(
+            (2 * params['blue_obs']['radius_x'], 2 * params['blue_obs']['radius_y']),
+            (6.0, 3.0))
+        self.assertEqual(2 * params['orange_obs']['radius'], 3.0)
+        self.assertEqual(
+            (2 * params['green_obs']['radius_x'], 2 * params['green_obs']['radius_y']),
+            (7.0, 2.0))
+
+        def centreline(name):
+            obstacle = params[name]
+            centre = (obstacle['init_x'], obstacle['init_y'])
+            if obstacle['type'] == 'cylinder':
+                return centre, centre, obstacle['radius']
+            half_length = obstacle['radius_x'] - obstacle['radius_y']
+            dx = half_length * math.cos(obstacle['init_yaw'])
+            dy = half_length * math.sin(obstacle['init_yaw'])
+            return ((centre[0] - dx, centre[1] - dy),
+                    (centre[0] + dx, centre[1] + dy),
+                    obstacle['radius_y'])
+
+        def point_segment_distance(point, start, end):
+            vx, vy = end[0] - start[0], end[1] - start[1]
+            length_squared = vx * vx + vy * vy
+            if length_squared == 0.0:
+                return math.dist(point, start)
+            wx, wy = point[0] - start[0], point[1] - start[1]
+            t = max(0.0, min(1.0, (wx * vx + wy * vy) / length_squared))
+            nearest = (start[0] + t * vx, start[1] + t * vy)
+            return math.dist(point, nearest)
+
+        def surface_gap(first, second):
+            a0, a1, ar = centreline(first)
+            b0, b1, br = centreline(second)
+            centreline_gap = min(
+                point_segment_distance(a0, b0, b1),
+                point_segment_distance(a1, b0, b1),
+                point_segment_distance(b0, a0, a1),
+                point_segment_distance(b1, a0, a1),
+            )
+            return centreline_gap - ar - br
+
+        for index, first in enumerate(expected):
+            for second in list(expected)[index + 1:]:
+                gap = surface_gap(first, second)
+                self.assertGreaterEqual(gap, 0.0)
+                self.assertLessEqual(gap, 1.2)
+                self.assertAlmostEqual(gap, 1.0)
 
 
 if __name__ == '__main__':

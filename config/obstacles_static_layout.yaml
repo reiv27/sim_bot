@@ -1,22 +1,23 @@
 # Static three-body layout reconstructed from the reference image.
 #
 # The layout from the reference image is rotated +pi/2 counter-clockwise about
-# its arithmetic centre. The whole group is then centred at (5, 0), eight metres
-# straight ahead of the robot at (-3, 0) when launched with spawn_yaw:=0. One
-# grid cell in the reference is treated as one metre. The zero yaw rotates the
-# robot +pi/2 from its historical default yaw=-pi/2, so its forward axis is +X.
+# its arithmetic centre. The enlarged group is centred at (7, 0), ten metres
+# straight ahead of the robot at (-3, 0) when launched with spawn_yaw:=0. The
+# minimum surface gap between every pair of bodies is 1.0 m. The zero yaw
+# rotates the robot +pi/2 from its historical default yaw=-pi/2, so its forward
+# axis is +X.
 obstacle_controller:
   ros__parameters:
     obstacle_names: [blue_obs, orange_obs, green_obs]
 
     blue_obs:
       type: elliptic_cylinder
-      radius_x: 2.0
-      radius_y: 1.0
+      radius_x: 3.0
+      radius_y: 1.5
       height: 0.7
       mass: 15.0
-      init_x: 4.666666666666667
-      init_y: 2.3333333333333335
+      init_x: 6.172533713030951
+      init_y: 2.965896694887001
       init_yaw: 0.0
       trajectory: static
       color_r: 0.1
@@ -25,11 +26,11 @@ obstacle_controller:
 
     orange_obs:
       type: cylinder
-      radius: 1.0
+      radius: 1.5
       height: 0.7
       mass: 15.0
-      init_x: 6.666666666666667
-      init_y: -0.6666666666666666
+      init_x: 9.154932573938098
+      init_y: -0.749274043744158
       init_yaw: 1.5707963267948966
       trajectory: static
       color_r: 1.0
@@ -38,12 +39,12 @@ obstacle_controller:
 
     green_obs:
       type: elliptic_cylinder
-      radius_x: 2.5
-      radius_y: 0.7
+      radius_x: 3.5
+      radius_y: 1.0
       height: 0.7
       mass: 15.0
-      init_x: 3.666666666666667
-      init_y: -1.6666666666666667
+      init_x: 5.672533713030951
+      init_y: -2.216622651142844
       init_yaw: 2.356194490192345
       trajectory: static
       color_r: 0.1
