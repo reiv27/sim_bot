@@ -57,15 +57,24 @@ After the simulation has started, run the controller in a second terminal:
 The controller runs inside the existing simulation container, so it uses the
 same ROS 2 Jazzy installation, DDS implementation and ROS domain as the
 Gazebo bridge. Press `Ctrl+C` in the second terminal to stop the controller.
-Its telemetry is written to `/tmp/reactive_circumnav.csv` in the container by
-default. The parameter file and telemetry path can be overridden without
-editing the scripts:
+Each run creates two timestamped files in the host directory
+`docker/telemetry/`:
+
+- `reactive_circumnav_*.csv` contains controller telemetry;
+- `reactive_circumnav_timing_*.csv` contains callback timing telemetry.
+
+The directory is mounted in the container at
+`/opt/sim_bot_data/telemetry`. Override the host directory by passing the same
+absolute path to both simulation and controller commands:
 
 ```bash
-REACTIVE_CIRCUMNAV_PARAMS_FILE=/path/in/container/controller_config.yaml \
-REACTIVE_CIRCUMNAV_TELEMETRY_LOG=/tmp/experiment.csv \
-  ./algorithm.sh
+SIM_BOT_TELEMETRY_DIR=/path/on/host ./restart.sh
+SIM_BOT_TELEMETRY_DIR=/path/on/host ./algorithm.sh
 ```
+
+The controller parameter file can still be overridden with
+`REACTIVE_CIRCUMNAV_PARAMS_FILE`; its value must be a path visible inside the
+container.
 
 Container lifecycle:
 

@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+script_dir="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 image_name="${SIM_BOT_IMAGE:-sim-bot:jazzy}"
 container_name="${SIM_BOT_CONTAINER:-sim-bot}"
 gz_partition="${SIM_BOT_GZ_PARTITION:-${container_name}}"
+telemetry_dir="${SIM_BOT_TELEMETRY_DIR:-${script_dir}/telemetry}"
+
+mkdir -p "${telemetry_dir}"
+telemetry_dir="$(cd -- "${telemetry_dir}" && pwd)"
 
 if ! docker image inspect "${image_name}" >/dev/null 2>&1; then
   echo "Docker image '${image_name}' does not exist. Run ./build.sh first." >&2
@@ -29,6 +34,7 @@ docker_args=(
   --env "GZ_PARTITION=${gz_partition}"
   --env QT_X11_NO_MITSHM=1
   --volume /tmp/.X11-unix:/tmp/.X11-unix:rw
+  --volume "${telemetry_dir}:/opt/sim_bot_data/telemetry:rw"
 )
 
 if [[ -n "${SIM_BOT_ROS_DOMAIN_ID:-}" ]]; then
@@ -74,4 +80,5 @@ docker run \
   ros2 launch sim_bot sim_with_obstacles.launch.py "$@"
 
 echo "Simulation container '${container_name}' started."
+echo "Telemetry directory: ${telemetry_dir}"
 echo "Use ./exec.sh to enter it and ./stop.sh to stop it."
